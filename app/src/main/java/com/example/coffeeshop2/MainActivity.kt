@@ -54,7 +54,7 @@ val RojoReservar = Color(0xFFE53935)
 val ColorDivisor = Color(0xFFF0E0E0)
 val ColorTarjetaResena = Color(0xFFFFD6E5)
 
-val FuenteAlivia = FontFamily(
+val FuenteCursiva = FontFamily(
     Font(R.font.aliviaregular)
 )
 
@@ -201,7 +201,7 @@ fun TarjetaCafeteriaUI(cafeteria: Cafeteria, onClick: () -> Unit) {
                 Text(
                     text = cafeteria.titulo,
                     fontSize = 32.sp,
-                    fontFamily = FuenteAlivia,
+                    fontFamily = FuenteCursiva,
                     color = MarronOscuro,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -365,7 +365,7 @@ fun EncabezadoDetalle(cafeteria: Cafeteria) {
         Text(
             text = cafeteria.titulo,
             fontSize = 36.sp,
-            fontFamily = FuenteAlivia,
+            fontFamily = FuenteCursiva,
             color = MarronOscuro,
             fontWeight = FontWeight.Bold
         )
