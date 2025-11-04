@@ -47,18 +47,8 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import kotlin.random.Random
 
-val FondoRosa = Color(0xFFFDE8EC)
-val MarronOscuro = Color(0xFF5D4037)
-val AmarilloEstrella = Color(0xFFFFC700)
-val RojoReservar = Color(0xFFE53935)
-val ColorDivisor = Color(0xFFF0E0E0)
-val ColorTarjetaResena = Color(0xFFFFD6E5)
-
-val FuenteCursiva = FontFamily(
-    Font(R.font.aliviaregular)
-)
-
-
+// Las variables FondoRosa, MarronOscuro, FuenteCursiva, listaCafeterias, etc.,
+// se asumen accesibles desde DatosCafeterias.kt en el mismo paquete.
 
 sealed class Pantalla(val ruta: String) {
     object ListaCafeterias : Pantalla("coffeeshops_list")
@@ -123,9 +113,7 @@ fun PantallaListaCafeterias(
     alNavegarADetalle: (String) -> Unit
 ) {
     val estadoDesplazamiento = rememberLazyListState()
-    val mostrarBotonFlotante by remember {
-        derivedStateOf { estadoDesplazamiento.firstVisibleItemIndex > 0 }
-    }
+    // Eliminada la variable 'mostrarBotonFlotante' y la lógica de derivedStateOf.
 
     Scaffold(
         topBar = {
@@ -142,16 +130,9 @@ fun PantallaListaCafeterias(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = FondoRosa)
             )
         },
+        // *** CAMBIO: Eliminado el FloatingActionButton completamente ***
         floatingActionButton = {
-            AnimatedVisibility(
-                visible = mostrarBotonFlotante,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                FloatingActionButton(onClick = {  }) {
-                    Icon(Icons.Filled.Menu, contentDescription = "Añadir elemento")
-                }
-            }
+            // Se deja vacío para no mostrar el botón.
         }
     ) { valoresRelleno ->
         LazyColumn(
@@ -172,7 +153,7 @@ fun PantallaListaCafeterias(
 
 @Composable
 fun TarjetaCafeteriaUI(cafeteria: Cafeteria, onClick: () -> Unit) {
-    val valoracionActual by remember { mutableStateOf(0.0f) }
+    var valoracionActual by remember { mutableStateOf(0.0f) }
 
     Card(
         modifier = Modifier
@@ -210,7 +191,8 @@ fun TarjetaCafeteriaUI(cafeteria: Cafeteria, onClick: () -> Unit) {
 
                 BarraEstrellas(
                     valoracion = valoracionActual,
-                    alCambiarValoracion = { nuevaValoracion ->  }
+                    // CAMBIO 2: Ahora el lambda actualiza el estado.
+                    alCambiarValoracion = { nuevaValoracion -> valoracionActual = nuevaValoracion }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -245,6 +227,7 @@ fun TarjetaCafeteriaUI(cafeteria: Cafeteria, onClick: () -> Unit) {
         }
     }
 }
+
 
 @Composable
 fun BarraEstrellas(valoracion: Float, alCambiarValoracion: (Float) -> Unit) {

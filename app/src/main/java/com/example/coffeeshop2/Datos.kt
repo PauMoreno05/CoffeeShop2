@@ -1,12 +1,25 @@
 package com.example.coffeeshop2
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+
 data class Cafeteria(
     val titulo: String,
     val subtitulo: String,
     val imagenRecurso: Int,
     val valoracionFija: Float
 )
+val FondoRosa = Color(0xFFFDE8EC)
+val MarronOscuro = Color(0xFF5D4037)
+val AmarilloEstrella = Color(0xFFFFC700)
+val RojoReservar = Color(0xFFE53935)
+val ColorDivisor = Color(0xFFF0E0E0)
+val ColorTarjetaResena = Color(0xFFFFD6E5)
 
+val FuenteCursiva = FontFamily(
+    Font(R.font.aliviaregular)
+)
 val listaCafeterias = listOf(
     Cafeteria("Antico Caffè Greco", "St. Italy, Rome", R.drawable.images, 4.0f),
     Cafeteria("Coffee Room", "St. Germany, Berlin", R.drawable.images1, 3.5f),
