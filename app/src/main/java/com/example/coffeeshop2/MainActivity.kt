@@ -40,15 +40,13 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.coffeeshop2.ui.theme.CoffeeShop2Theme
 import java.net.URLDecoder
 import java.net.URLEncoder
 import kotlin.random.Random
-
-// Las variables FondoRosa, MarronOscuro, FuenteCursiva, listaCafeterias, etc.,
-// se asumen accesibles desde DatosCafeterias.kt en el mismo paquete.
 
 sealed class Pantalla(val ruta: String) {
     object ListaCafeterias : Pantalla("coffeeshops_list")
@@ -68,85 +66,121 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppCafeterias() {
     val controladorNavegacion = rememberNavController()
+    val backStackEntry by controladorNavegacion.currentBackStackEntryAsState()
+    val rutaActual = backStackEntry?.destination?.route
     val cafeterias = remember { listaCafeterias }
 
-    NavHost(
-        navController = controladorNavegacion,
-        startDestination = Pantalla.ListaCafeterias.ruta
-    ) {
-        composable(Pantalla.ListaCafeterias.ruta) {
-            PantallaListaCafeterias(
-                cafeterias = cafeterias,
-                alNavegarADetalle = { tituloCafeteria ->
-                    controladorNavegacion.navigate(Pantalla.DetalleCafeteria.crearRuta(tituloCafeteria))
-                }
-            )
-        }
-        composable(
-            route = Pantalla.DetalleCafeteria.ruta,
-            arguments = listOf(navArgument("shopTitle") { type = NavType.StringType })
-        ) { entradaPila ->
-            val tituloCafeteriaCodificado = entradaPila.arguments?.getString("shopTitle")
-            val tituloCafeteria = tituloCafeteriaCodificado?.let { URLDecoder.decode(it, "UTF-8") }
+    val mostrarBotonFlotanteDetalle = remember { mutableStateOf(false) }
 
-            val cafeteria = cafeterias.firstOrNull { it.titulo == tituloCafeteria }
-
-            if (cafeteria != null) {
-                PantallaDetalleCafeteria(
-                    cafeteria = cafeteria,
-                    onClickAtras = { controladorNavegacion.popBackStack() }
+    val esPantallaDetalle = rutaActual?.startsWith(Pantalla.DetalleCafeteria.ruta.substringBefore("/{")) ?: false
+    
+    Scaffold(
+        topBar = {
+            if (rutaActual == Pantalla.ListaCafeterias.ruta) {
+                TopAppBar(
+                    title = { Text("CoffeeShops", color = MarronOscuro) },
+                    navigationIcon = {
+                        IconButton(onClick = { /* Acción de menú */ }) {
+                            Icon(Icons.Filled.Menu, contentDescription = "Menú", tint = MarronOscuro)
+                        }
+                    },
+                    actions = { MenuOpciones(colorContenido = MarronOscuro) },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = FondoRosa)
                 )
-            } else {
-                Text("Error: Cafetería no encontrada.", modifier = Modifier.padding(16.dp))
+            } else if (esPantallaDetalle) {
+                val tituloCafeteriaCodificado = backStackEntry?.arguments?.getString("shopTitle")
+                val tituloCafeteria = tituloCafeteriaCodificado?.let { URLDecoder.decode(it, "UTF-8") } ?: ""
+                
+                TopAppBar(
+                    title = { Text(tituloCafeteria, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MarronOscuro) },
+                    navigationIcon = {
+                        IconButton(onClick = { controladorNavegacion.popBackStack() }) {
+                            Icon(Icons.Filled.ArrowBack, contentDescription = "Atrás", tint = MarronOscuro)
+                        }
+                    },
+                    actions = { MenuOpciones(colorContenido = MarronOscuro) },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = FondoRosa)
+                )
+            }
+        },
+        floatingActionButton = {
+            if (esPantallaDetalle) {
+                AnimatedVisibility(
+                    visible = mostrarBotonFlotanteDetalle.value,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    FloatingActionButton(
+                        onClick = { /* Acción de añadir comentario */ },
+                        containerColor = ColorTarjetaResena,
+                        contentColor = Color.White,
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Add new comment", fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp))
+                    }
+                }
+            }
+        },
+        floatingActionButtonPosition = if (esPantallaDetalle) FabPosition.Center else FabPosition.End
+    ) { valoresRelleno ->
+        NavHost(
+            navController = controladorNavegacion,
+            startDestination = Pantalla.ListaCafeterias.ruta,
+            modifier = Modifier.padding(valoresRelleno)
+        ) {
+            composable(Pantalla.ListaCafeterias.ruta) {
+                PantallaListaCafeterias(
+                    cafeterias = cafeterias,
+                    alNavegarADetalle = { tituloCafeteria ->
+                        controladorNavegacion.navigate(Pantalla.DetalleCafeteria.crearRuta(tituloCafeteria))
+                    }
+                )
+            }
+            composable(
+                route = Pantalla.DetalleCafeteria.ruta,
+                arguments = listOf(navArgument("shopTitle") { type = NavType.StringType })
+            ) { entradaPila ->
+                val tituloCafeteriaCodificado = entradaPila.arguments?.getString("shopTitle")
+                val tituloCafeteria = tituloCafeteriaCodificado?.let { URLDecoder.decode(it, "UTF-8") }
+
+                val cafeteria = cafeterias.firstOrNull { it.titulo == tituloCafeteria }
+
+                if (cafeteria != null) {
+                    PantallaDetalleCafeteria(
+                        cafeteria = cafeteria,
+                        onClickAtras = { controladorNavegacion.popBackStack() },
+                        setMostrarFab = { mostrarBotonFlotanteDetalle.value = it }
+                    )
+                } else {
+                    Text("Error: Cafetería no encontrada.", modifier = Modifier.padding(16.dp))
+                }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaListaCafeterias(
     cafeterias: List<Cafeteria>,
     alNavegarADetalle: (String) -> Unit
 ) {
     val estadoDesplazamiento = rememberLazyListState()
-    // Eliminada la variable 'mostrarBotonFlotante' y la lógica de derivedStateOf.
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("CoffeeShops", color = MarronOscuro) },
-                navigationIcon = {
-                    IconButton(onClick = {  }) {
-                        Icon(Icons.Filled.Menu, contentDescription = "Menú", tint = MarronOscuro)
-                    }
-                },
-                actions = {
-                    MenuOpciones(colorContenido = MarronOscuro)
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = FondoRosa)
+    LazyColumn(
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        state = estadoDesplazamiento,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        items(cafeterias) { cafeteria ->
+            TarjetaCafeteriaUI(
+                cafeteria = cafeteria,
+                onClick = { alNavegarADetalle(cafeteria.titulo) }
             )
-        },
-        // *** CAMBIO: Eliminado el FloatingActionButton completamente ***
-        floatingActionButton = {
-            // Se deja vacío para no mostrar el botón.
-        }
-    ) { valoresRelleno ->
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            state = estadoDesplazamiento,
-            modifier = Modifier.padding(valoresRelleno)
-        ) {
-            items(cafeterias) { cafeteria ->
-                TarjetaCafeteriaUI(
-                    cafeteria = cafeteria,
-                    onClick = { alNavegarADetalle(cafeteria.titulo) }
-                )
-            }
         }
     }
 }
@@ -191,7 +225,6 @@ fun TarjetaCafeteriaUI(cafeteria: Cafeteria, onClick: () -> Unit) {
 
                 BarraEstrellas(
                     valoracion = valoracionActual,
-                    // CAMBIO 2: Ahora el lambda actualiza el estado.
                     alCambiarValoracion = { nuevaValoracion -> valoracionActual = nuevaValoracion }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -215,7 +248,7 @@ fun TarjetaCafeteriaUI(cafeteria: Cafeteria, onClick: () -> Unit) {
                 horizontalArrangement = Arrangement.Start
             ) {
                 TextButton(
-                    onClick = {  },
+                    onClick = { /* Acción de reserva */ },
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = RojoReservar
                     ),
@@ -288,50 +321,40 @@ fun MenuOpciones(colorContenido: Color) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PantallaDetalleCafeteria(cafeteria: Cafeteria, onClickAtras: () -> Unit) {
+fun PantallaDetalleCafeteria(
+    cafeteria: Cafeteria,
+    onClickAtras: () -> Unit,
+    setMostrarFab: (Boolean) -> Unit
+) {
     val estadoDesplazamiento = rememberLazyStaggeredGridState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(cafeteria.titulo, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MarronOscuro) },
-                navigationIcon = {  },
-                actions = { MenuOpciones(colorContenido = MarronOscuro) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = FondoRosa)
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {  },
-                containerColor = ColorTarjetaResena,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                Text("Add new comment", fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp))
-            }
-        },
-        floatingActionButtonPosition = FabPosition.Center
-    ) { valoresRelleno ->
-        Column(
-            modifier = Modifier
-                .padding(valoresRelleno)
-                .fillMaxSize()
-        ) {
-            EncabezadoDetalle(cafeteria = cafeteria)
+    val mostrarBotonFlotante by remember {
+        derivedStateOf {
+            estadoDesplazamiento.firstVisibleItemIndex == 0
+        }
+    }
 
-            LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
-                contentPadding = PaddingValues(16.dp),
-                verticalItemSpacing = 8.dp,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                state = estadoDesplazamiento,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(todosComentarios) { comentario ->
-                    TarjetaComentario(comentario)
-                }
+    LaunchedEffect(mostrarBotonFlotante) {
+        setMostrarFab(mostrarBotonFlotante)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        EncabezadoDetalle(cafeteria = cafeteria)
+
+        LazyVerticalStaggeredGrid(
+            columns = StaggeredGridCells.Fixed(2),
+            contentPadding = PaddingValues(16.dp),
+            verticalItemSpacing = 8.dp,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            state = estadoDesplazamiento,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(todosComentarios) { comentario ->
+                TarjetaComentario(comentario)
             }
         }
     }
